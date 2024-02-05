@@ -1,0 +1,157 @@
+// Codigo Por Jose Eduardo Pardiñaz Mercado
+//
+long valor;
+long valorAnterior;
+int celsius = 0;
+
+float temperaturaAmbiente = 29.0;  // Temperatura ambiente en grados Celsius
+const float temperaturaMaxima = 60.0;   // Temperatura máxima en grados Celsius
+const int valorMinimo = 0;                // Valor analógico correspondiente a 0V
+const int valorMaximo = 1023;             // Valor analógico correspondiente a 5V
+
+float segundosON;
+float segundosOFF;
+
+float tiemposON;
+float tiemposOFF;
+
+float timeCON;
+float timeCOFF;
+
+float valorMax;
+float valorMin;
+
+float temperatura;
+
+unsigned long tiempoAnterior = 0;  // Variable para almacenar el tiempo anterior
+unsigned long intervalo = 100;     // Intervalo de tiempo deseado en milisegundos
+
+int ciclo = 0;
+
+//SETUP
+
+void setup()
+{
+  pinMode(A0, INPUT);
+  Serial.begin(9600);
+  pinMode(4, OUTPUT);
+  pinMode(A1, INPUT);
+  analogReference(INTERNAL);
+}
+
+//MAIN
+
+void loop()
+{
+  
+  SensarTemp();
+  //float temperaturaAmbiente = temperaturaAmbiente;
+  Potenciometro();
+  
+  
+  tiemposON = subirTemperatura(valorMax, celsius);
+  tiemposOFF = subirTemperatura(valorMin, celsius);
+  timeCON = ControlArriba(valor);
+  timeCOFF = ControlAbajo(valor);
+  
+  
+  // Verificar si ha pasado el intervalo deseado
+
+  if (millis() > tiempoAnterior + intervalo) {
+	
+    // Realizar la tarea que deseas ejecutar cada 1500 ms aquí
+    
+	Serial.println(timeCON);
+ 	Serial.println(timeCOFF);
+    
+              if(ciclo == 0){
+			  Serial.println("El ciclo es 0.");
+              prenderRelevador();
+              Serial.print(tiemposON);
+              intervalo = (tiemposON);
+              ciclo++;
+              }else{
+      
+                if (ciclo %2 == 0) {
+              //ENCENDER EL FOCO
+              Serial.println("Encendido");
+              prenderRelevador();
+              Serial.print(timeCON);
+              intervalo = (timeCON);
+              ciclo++;
+            } else {  
+              //APAGAR EL FOCO
+
+              Serial.println("Apagado");
+              apagarRelevador();
+              Serial.print(timeCOFF);
+              intervalo = (timeCOFF);
+              ciclo++;
+            }
+    	}
+    // Actualizar el tiempo anterior al actual
+    tiempoAnterior = millis();
+    valorAnterior = valor;
+  }
+
+  // Otras tareas que deseas realizar en el loop
+
+  
+}
+
+
+//FUNCIONES
+
+float subirTemperatura(float Pudin, float Ambiente) {
+  float milisegundosON = ((Pudin / 0.1256) + Ambiente)*1000;
+  return milisegundosON;
+}
+
+float bajarTemperatura(float Pudin, float Ambiente) {
+  float segundosOFF = ((Pudin / -0.126) + Ambiente) * -1000;
+  return segundosOFF;
+}
+
+float ControlArriba(float Pudin){
+  float segundosOFF = ((Pudin / 0.126) + 2000) * 1;
+  return segundosOFF;
+ }
+
+float ControlAbajo(float Pudin){
+  float segundosOFF = ((Pudin / 0.1256) + 4000) * 1;
+  return segundosOFF;
+ }
+
+
+void prenderRelevador()
+{
+  digitalWrite(4, HIGH);
+  Serial.println("ENCENDIDO");
+}
+
+void apagarRelevador()
+{
+  digitalWrite(4, LOW);
+  Serial.println("APAGADO");
+}
+  
+void SensarTemp()
+{
+  //FORMULA DISEÑADA EXCLUSIVAMENTE SEGUN TINKERCAD PARA TMP36
+  //celsius = map(((analogRead(A0) - 20) * 3.04), 0, 1023, -40, 125);
+  celsius = ((1100.0 * valor)/1023.0)/10;
+  //Conversión de celsius en temperaturaAmbiente
+  celsius = temperaturaAmbiente;
+}
+
+void Potenciometro()
+{
+  valor = analogRead(A1);
+  temperatura = map(valor, valorMinimo, valorMaximo, temperaturaAmbiente, temperaturaMaxima);
+ 
+  //Imprimimos por el monitor serie
+  //Serial.print("El valor es = ");
+  Serial.println(temperatura);
+  valorMax = temperatura + 2;
+  valorMin = temperatura - 4;
+}
